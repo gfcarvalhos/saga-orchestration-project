@@ -4,7 +4,6 @@ import br.com.microservices.orchestrated.paymentservice.config.exception.Validat
 import br.com.microservices.orchestrated.paymentservice.core.dto.Event;
 import br.com.microservices.orchestrated.paymentservice.core.dto.History;
 import br.com.microservices.orchestrated.paymentservice.core.dto.OrderProducts;
-import br.com.microservices.orchestrated.paymentservice.core.enums.EnumPaymentStatus;
 import br.com.microservices.orchestrated.paymentservice.core.enums.EnumSagaStatus;
 import br.com.microservices.orchestrated.paymentservice.core.model.Payment;
 import br.com.microservices.orchestrated.paymentservice.core.producer.KafkaProducer;
@@ -139,14 +138,14 @@ public class PaymentService {
         producer.sendEvent(jsonUtil.toJson(event));
     }
 
-    public void changePaymentStatusToRefund(Event event){
+    private void changePaymentStatusToRefund(Event event){
         var payment = findByOrderIdAndTransactionId(event);
         payment.setStatus(REFUND);
         setEventAmountItems(event, payment);
         save(payment);
     }
 
-    public void handleFailCurrentNotExecuted(Event event, String message){
+    private void handleFailCurrentNotExecuted(Event event, String message){
         event.setStatus(EnumSagaStatus.ROLLBACK_PENDING);
         event.setSource(CURRENT_SOURCE);
         addHistory(event, "Failed to realize payment: ".concat(message));
