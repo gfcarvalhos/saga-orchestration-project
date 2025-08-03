@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+import static br.com.microservices.orchestrated.paymentservice.core.enums.EnumPaymentStatus.REFUND;
 import static br.com.microservices.orchestrated.paymentservice.core.enums.EnumPaymentStatus.SUCCESS;
 
 @Slf4j
@@ -40,6 +41,7 @@ public class PaymentService {
             changePaymentToSuccess(payment);
             handleSuccess(event);
         } catch (Exception ex) {
+            handleFailCurrentNotExecuted(event, ex.getMessage());
             log.error("Error trying to realize payment: ", ex);
         }
 
@@ -123,6 +125,31 @@ public class PaymentService {
                 .createdAt(LocalDateTime.now())
                 .build();
         event.addToHistory(history);
+    }
+
+    public void realizeRefund(Event event){
+        event.setStatus(EnumSagaStatus.FAIL);
+        event.setSource(CURRENT_SOURCE);
+        try{
+            changePaymentStatusToRefund(event);
+            addHistory(event, "Rollback executed in payment!");
+        } catch (Exception ex) {
+            addHistory(event, "Rollback not executed in payment: ".concat(ex.getMessage()));
+        }
+        producer.sendEvent(jsonUtil.toJson(event));
+    }
+
+    public void changePaymentStatusToRefund(Event event){
+        var payment = findByOrderIdAndTransactionId(event);
+        payment.setStatus(REFUND);
+        setEventAmountItems(event, payment);
+        save(payment);
+    }
+
+    public void handleFailCurrentNotExecuted(Event event, String message){
+        event.setStatus(EnumSagaStatus.ROLLBACK_PENDING);
+        event.setSource(CURRENT_SOURCE);
+        addHistory(event, "Failed to realize payment: ".concat(message));
     }
 
     private void save(Payment payment){
