@@ -7,7 +7,7 @@ threads = []
 def build_application(app):
     threads.append(app)
     print("Building application {}".format(app))
-    os.system("cd {} && gradle build -x test".format(app))
+    os.system(f"cd {app} && gradlew.bat build -x test")
     print("Application {} finished building!".format(app))
     threads.remove(app)
 
@@ -20,16 +20,12 @@ def docker_compose_up():
 
 def build_all_applications():
     print("Starting to build applications!")
-    threading.Thread(target=build_application,
-                     args={"order-service"}).start()
-    threading.Thread(target=build_application,
-                     args={"orchestrator-service"}).start()
-    threading.Thread(target=build_application,
-                     args={"product-validation-service"}).start()
-    threading.Thread(target=build_application,
-                     args={"payment-service"}).start()
-    threading.Thread(target=build_application,
-                     args={"inventory-service"}).start()
+    threading.Thread(target=build_application, args=("order-service",)).start()
+    threading.Thread(target=build_application, args=("orchestrator-service",)).start()
+    threading.Thread(target=build_application, args=("product-validation-service",)).start()
+    threading.Thread(target=build_application, args=("payment-service",)).start()
+    threading.Thread(target=build_application, args=("inventory-service",)).start()
+
 
 
 def remove_remaining_containers():
